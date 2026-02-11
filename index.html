@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Add USDT Token to MetaMask</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding: 24px; color:#111; background:#f7f7fb; }
+    .card { max-width:640px; margin:24px auto; background:#fff; border-radius:12px; padding:20px; box-shadow:0 6px 18px rgba(20,20,40,0.06); }
+    h1 { margin:0 0 8px; font-size:20px; }
+    p { margin:8px 0 16px; color:#444; }
+    button { background:#2563eb; color:#fff; border:none; padding:12px 16px; border-radius:8px; font-size:16px; cursor:pointer; }
+    button:active { transform:translateY(1px); }
+    .meta { font-size:13px; color:#666; margin-top:12px; }
+    .small { font-size:13px; color:#666; margin-top:8px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Add USDT to MetaMask</h1>
+    <p>Tap the button below while viewing this page inside MetaMask mobile to add the token and its icon to the wallet.</p>
+
+    <button id="addToken">Add USDT to MetaMask</button>
+
+    <div class="meta">
+      <div><strong>Contract</strong> 0x49707e09000a9713e5da78454d86a3869571dc21</div>
+      <div><strong>Symbol</strong> USDT</div>
+      <div><strong>Decimals</strong> 6</div>
+      <div class="small"><strong>Image</strong> https://jade-urgent-louse-281.mypinata.cloud/ipfs/bafkreia6epqtos6cvffqpaxkrr65kru5u3nzdnse4f4j6o76lslcrmyik4</div>
+    </div>
+  </div>
+
+  <script>
+    const tokenAddress = '0x49707e09000a9713e5da78454d86a3869571dc21';
+    const tokenSymbol = 'USDT';
+    const tokenDecimals = 6;
+    const tokenImage = 'https://jade-urgent-louse-281.mypinata.cloud/ipfs/bafkreia6epqtos6cvffqpaxkrr65kru5u3nzdnse4f4j6o76lslcrmyik4';
+
+    async function addToken() {
+      if (!window.ethereum) {
+        alert('No Ethereum provider detected. Open this page inside MetaMask mobile in the MetaMask in-app browser.');
+        return;
+      }
+
+      try {
+        const wasAdded = await window.ethereum.request({
+          method: 'wallet_watchAsset',
+          params: {
+            type: 'ERC20',
+            options: {
+              address: tokenAddress,
+              symbol: tokenSymbol,
+              decimals: tokenDecimals,
+              image: tokenImage
+            },
+          },
+        });
+
+        if (wasAdded) {
+          alert('Token added to MetaMask.');
+        } else {
+          alert('Token not added. The user may have rejected the request.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error: ' + (err && err.message ? err.message : err));
+      }
+    }
+
+    document.getElementById('addToken').addEventListener('click', addToken);
+  </script>
+</body>
+</html>
