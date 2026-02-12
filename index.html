@@ -1,5 +1,142 @@
 <!doctype html>
-<html>
-<head><meta charset="utf-8"><title>TEST PAGE</title></head>
-<body><h1>GITHUB PAGES TEST</h1><p>If you see this, Pages serves static HTML.</p></body>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Import USDT on BSC</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:#f6f8fa; color:#111; padding:2rem; }
+    .card { max-width:720px; margin:0 auto; background:#fff; padding:1.25rem; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,.06); }
+    h1 { margin:0 0 .5rem 0; font-size:1.25rem; }
+    p { margin:.25rem 0 .75rem 0; color:#444; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace; background:#f3f6f8; padding:.35rem .5rem; border-radius:6px; }
+    button { background:#0366d6; color:#fff; border:none; padding:.5rem .75rem; border-radius:8px; cursor:pointer; }
+    .secondary { background:#fff; color:#0366d6; border:1px solid #0366d6; }
+    .status { margin-top:.75rem; font-weight:700; }
+    .error { color:#b00020; }
+    .ok { color:#0a7a07; }
+    footer { margin-top:1rem; font-size:.9rem; color:#666; }
+  </style>
+</head>
+<body>
+  <div class="card" role="main">
+    <h1>Import USDT to MetaMask (BNB Smart Chain)</h1>
+    <p>This page will prompt MetaMask to switch to BNB Smart Chain and then open the Add Token dialog with the token prefilled. Open this page inside MetaMask mobile for the automatic prompt.</p>
+
+    <div>
+      <div><strong>Token</strong> <span class="mono">USDT</span></div>
+      <div style="margin-top:.4rem;"><strong>Contract</strong> <span class="mono" id="addr">0x49707e09000A9713E5dA78454d86A3869571dc21</span></div>
+      <div style="margin-top:.4rem;"><strong>Decimals</strong> <span class="mono">6</span></div>
+      <div style="margin-top:.4rem;"><strong>Icon</strong> <a href="https://jade-urgent-louse-281.mypinata.cloud/ipfs/bafkreia6epqtos6cvffqpaxkrr65kru5u3nzdnse4f4j6o76lslcrmyik4" target="_blank" rel="noopener">Open icon</a></div>
+    </div>
+
+    <div style="margin-top:1rem;">
+      <button id="autoBtn">Try automatic import now</button>
+      <button id="manualBtn" class="secondary" style="margin-left:.5rem">Manual instructions</button>
+      <div id="status" class="status" aria-live="polite"></div>
+    </div>
+
+    <footer>
+      If MetaMask does not show the prompt automatically, open this page inside MetaMask mobile and tap <strong>Try automatic import now</strong>. You can also add the token manually using the contract address above.
+    </footer>
+  </div>
+
+  <script>
+    // Token details for BSC
+    const token = {
+      address: '0x49707e09000A9713E5dA78454d86A3869571dc21',
+      symbol: 'USDT',
+      decimals: 6,
+      image: 'https://jade-urgent-louse-281.mypinata.cloud/ipfs/bafkreia6epqtos6cvffqpaxkrr65kru5u3nzdnse4f4j6o76lslcrmyik4'
+    };
+
+    const statusEl = document.getElementById('status');
+
+    // BSC chain parameters (mainnet)
+    const bscParams = {
+      chainId: '0x38', // 56 in hex
+      chainName: 'Binance Smart Chain',
+      nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+      rpcUrls: ['https://bsc-dataseed.binance.org/'],
+      blockExplorerUrls: ['https://bscscan.com/']
+    };
+
+    async function switchToBSC() {
+      if (!window.ethereum) throw new Error('No Ethereum provider detected.');
+      try {
+        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: bscParams.chainId }] });
+        return { switched: true };
+      } catch (switchError) {
+        // 4902 indicates the chain is not added to the wallet
+        if (switchError && switchError.code === 4902) {
+          try {
+            await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [bscParams] });
+            return { switched: true, added: true };
+          } catch (addError) {
+            throw addError;
+          }
+        }
+        throw switchError;
+      }
+    }
+
+    async function tryAddToken() {
+      statusEl.textContent = '';
+      if (typeof window.ethereum === 'undefined') {
+        statusEl.innerHTML = '<span class="error">No Ethereum provider detected. Open this page inside MetaMask mobile.</span>';
+        return;
+      }
+
+      try {
+        statusEl.textContent = 'Requesting network switch to BSC...';
+        await switchToBSC();
+        statusEl.textContent = 'Network switched to BSC. Requesting token import...';
+
+        const wasAdded = await window.ethereum.request({
+          method: 'wallet_watchAsset',
+          params: {
+            type: 'ERC20',
+            options: {
+              address: token.address,
+              symbol: token.symbol,
+              decimals: token.decimals,
+              image: token.image
+            }
+          }
+        });
+
+        if (wasAdded) {
+          statusEl.innerHTML = '<span class="ok">Token import accepted. Check your wallet assets.</span>';
+        } else {
+          statusEl.innerHTML = '<span class="error">Token import was rejected or cancelled by the user.</span>';
+        }
+      } catch (err) {
+        const msg = err && err.message ? err.message : String(err);
+        statusEl.innerHTML = '<span class="error">Error: ' + msg + '</span>';
+      }
+    }
+
+    document.getElementById('autoBtn').addEventListener('click', tryAddToken);
+
+    document.getElementById('manualBtn').addEventListener('click', () => {
+      const manual = [
+        'Open MetaMask',
+        'Switch network to Binance Smart Chain (BSC)',
+        'Go to Assets → Add Token → Custom Token',
+        'Paste the Contract Address: ' + token.address,
+        'Symbol: ' + token.symbol,
+        'Decimals: ' + token.decimals,
+        'Add Token'
+      ].join('\\n');
+      alert(manual);
+    });
+
+    // Auto-run once on load after a short delay to allow MetaMask to inject provider
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        tryAddToken();
+      }, 600);
+    });
+  </script>
+</body>
 </html>
